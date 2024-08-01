@@ -9,7 +9,7 @@ app_file: app.py
 pinned: false
 license: apache-2.0
 ---
-
+[![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://carewell.streamlit.app/)
 ### How to run it on your own machine
 
 1. Install the requirements

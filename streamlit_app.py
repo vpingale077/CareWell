@@ -4,6 +4,7 @@ import json
 import datetime
 from appointment_scheduling import book_appointment
 from AI71 import call_ai71
+from util import setChatMsg
 
 # Constants
 AI71_API_KEY = "your_api_key_here"
@@ -16,17 +17,17 @@ def classify_intent(intent, entities, msg):
     allowed_intents = ["Booking an appointment","Canceling an appointment","appointment status","doctor information","hospital information"]
 
     if intent not in allowed_intents:
-        return True, default_resp
+        setChatMsg(default_resp)
     if "Booking an appointment" in intent:
-        return book_appointment(entities, AI71_API_KEY)
+        book_appointment(entities, AI71_API_KEY)
     if "Canceling an appointment" in intent:
-        return True, default_resp
+        setChatMsg(default_resp)
     if "appointment status" in intent:
-        return True, default_resp
+        setChatMsg(default_resp)
     if "doctor information" in intent:
-        return True, default_resp
+        setChatMsg(default_resp)
     if "hospital information" in intent:
-        return True, default_resp
+        setChatMsg(default_resp)
 
 def handle_ai71_response(response):
     try:
@@ -35,12 +36,11 @@ def handle_ai71_response(response):
         if "intent" in msg:
             intent = msg.get("intent")
             entities = msg.get("entities", {})
-            is_valid, resp = classify_intent(intent, entities, msg)
-            return resp
+            classify_intent(intent, entities, msg)
         else:
-            return default_resp
+            setChatMsg(msg)
     except (json.JSONDecodeError, IndexError):
-        return default_resp
+        setChatMsg(response.choices[0].message.content)
 
 # Streamlit App
 st.title("CareWell Chatbot")
@@ -70,6 +70,4 @@ if prompt := st.chat_input():
     st.chat_message("user").write(prompt)
     response = call_ai71(st.session_state.messages, AI71_API_KEY)
     print(response)
-    response = handle_ai71_response(response)
-    st.session_state.messages.append({"role": "assistant", "content": response})
-    st.chat_message("assistant").write(response)
+    handle_ai71_response(response)

@@ -1,5 +1,5 @@
 import datetime
-
+import streamlit as st
 from AI71 import call_ai71
 
 def is_valid_date(date_string):
@@ -23,3 +23,7 @@ def get_date_in_format(date_string,AI71_API_KEY):
     response = call_ai71(messages,AI71_API_KEY)
     print('get_date_in_format', response)
     return response
+
+def setChatMsg(response):
+    st.session_state.messages.append({"role": "assistant", "content": response})
+    st.chat_message("assistant").write(response)

@@ -61,6 +61,6 @@ if prompt := st.chat_input():
             st.session_state.messages.append({"role": "assistant", "content": msg})
             st.chat_message("assistant").write(msg)    
     except (json.JSONDecodeError, IndexError):
-        st.session_state.messages.append({"role": "assistant", "content": msg})
-        st.chat_message("assistant").write(msg)  
+        st.session_state.messages.append({"role": "assistant", "content": response})
+        st.chat_message("assistant").write(response)  
         print("Exception")

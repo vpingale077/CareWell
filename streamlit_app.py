@@ -21,7 +21,7 @@ def intent_classify(intent,entities,msg):
         return book_appointment(entities,AI71_API_KEY)
 # Streamlit App
 st.title("CareWell Chatbot")
-st.caption("Chatbot powered by AI71")
+st.caption("Chatbot powered by AI71 for Hospital Administartion")
 
 # Sidebar
 with st.sidebar:
@@ -31,8 +31,8 @@ with st.sidebar:
 # Chat Interface
 if "messages" not in st.session_state:
     st.session_state["messages"] = [
-        {"role": "system", "content": "Extract only hospital administration intent and entities from the following query in a structured JSON format :Intent: Entities:. Intent must be one of Booking an appointment,Canceling an appointment,appointment status,doctor information,hospital information. "},
-        {"role": "assistant", "content": "How can I help you?"}
+        {"role": "system", "content": "Extract only hospital administration intent and entities from the following query in a structured JSON format :Intent: Entities:. Intent must be one of Booking an appointment,Canceling an appointment,appointment status,doctor information,hospital information. All other request must be politly refused. "},
+        {"role": "assistant", "content": "How can i help you?"}
     ]
 
 for msg in st.session_state.messages:

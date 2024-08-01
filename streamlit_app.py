@@ -12,7 +12,7 @@ AI71_API_KEY = "your_api_key_here"
 def classify_intent(intent, entities, msg):
     """Classifies an intent and extracts parameters"""
     if "Booking an appointment" not in intent:
-        return True, msg
+        return True, f"I'm sorry, as an AI language model, I am not capable of {intent}. However, I can assist you with any Hospital related queries "
     if "Booking an appointment" in intent:
         return book_appointment(entities, AI71_API_KEY)
 

@@ -1,151 +1,61 @@
+from AI71 import call_ai71
+from appointment_scheduling import book_appointment
 import streamlit as st
-import pandas as pd
-import math
-from pathlib import Path
+import json
 
-# Set the title and favicon that appear in the Browser's tab bar.
-st.set_page_config(
-    page_title='GDP dashboard',
-    page_icon=':earth_americas:', # This is an emoji shortcode. Could be a URL too.
-)
+# Constants
+AI71_API_KEY = "your_api_key_here"
 
-# -----------------------------------------------------------------------------
-# Declare some useful functions.
+# Functions
+def intent_classify(msg):
+    """Classifies an intent and extracts parameters"""
+    msg_json = json.loads(msg)
+    intent = msg_json["intent"]
+    parameters = msg_json["parameters"]
+    
+    if "appointment_scheduling" not in intent:
+        return True, msg
+    if "appointment_scheduling" in intent:
+        return book_appointment(parameters,AI71_API_KEY)
+# Streamlit App
+st.title("CareWell Chatbot")
+st.caption("Chatbot powered by AI71")
 
-@st.cache_data
-def get_gdp_data():
-    """Grab GDP data from a CSV file.
+# Sidebar
+with st.sidebar:
+    AI71_API_KEY = st.text_input("AI71 API Key", key="chatbot_api_key", type="password")
+    st.markdown("[Get an AI71 API key](https://marketplace.ai71.ai/api-keys)")
 
-    This uses caching to avoid having to read the file every time. If we were
-    reading from an HTTP endpoint instead of a file, it's a good idea to set
-    a maximum age to the cache with the TTL argument: @st.cache_data(ttl='1d')
-    """
+# Chat Interface
+if "messages" not in st.session_state:
+    st.session_state["messages"] = [
+        {"role": "system", "content": """Classify the following text into a hospital administration intent and extract relevant parameters. Strictly follow intent mentioned below. If user is asking about any medical condition or healthcare information ask to take dr appoitment. Guide user for using mentioned intent only and available features for users.
+Output the results in JSON format with the following structure.
+Intent must be from one of the below this appointment_scheduling,appointment_cancellation,patient_records,staff_management,billing_and_insurance,facility_management,supply_management,quality_control,financial_management.
+If intent is not one of them respond with unknow_intent.
+Example:Prompt: "Schedule an appointment for Dr. Smith on Tuesday at 2 PM"
+Output:{"intent": "appointment_scheduling","parameters": {"doctor": "","date": "","time": ""}}"""},
+        {"role": "assistant", "content": "How can I help you?"}
+    ]
 
-    # Instead of a CSV on disk, you could read from an HTTP endpoint here too.
-    DATA_FILENAME = Path(__file__).parent/'data/gdp_data.csv'
-    raw_gdp_df = pd.read_csv(DATA_FILENAME)
+for msg in st.session_state.messages:
+    if msg["role"] != "system":
+        st.chat_message(msg["role"]).write(msg["content"])
 
-    MIN_YEAR = 1960
-    MAX_YEAR = 2022
-
-    # The data above has columns like:
-    # - Country Name
-    # - Country Code
-    # - [Stuff I don't care about]
-    # - GDP for 1960
-    # - GDP for 1961
-    # - GDP for 1962
-    # - ...
-    # - GDP for 2022
-    #
-    # ...but I want this instead:
-    # - Country Name
-    # - Country Code
-    # - Year
-    # - GDP
-    #
-    # So let's pivot all those year-columns into two: Year and GDP
-    gdp_df = raw_gdp_df.melt(
-        ['Country Code'],
-        [str(x) for x in range(MIN_YEAR, MAX_YEAR + 1)],
-        'Year',
-        'GDP',
-    )
-
-    # Convert years from string to integers
-    gdp_df['Year'] = pd.to_numeric(gdp_df['Year'])
-
-    return gdp_df
-
-gdp_df = get_gdp_data()
-
-# -----------------------------------------------------------------------------
-# Draw the actual page
-
-# Set the title that appears at the top of the page.
-'''
-# :earth_americas: GDP dashboard
-
-Browse GDP data from the [World Bank Open Data](https://data.worldbank.org/) website. As you'll
-notice, the data only goes to 2022 right now, and datapoints for certain years are often missing.
-But it's otherwise a great (and did I mention _free_?) source of data.
-'''
-
-# Add some spacing
-''
-''
-
-min_value = gdp_df['Year'].min()
-max_value = gdp_df['Year'].max()
-
-from_year, to_year = st.slider(
-    'Which years are you interested in?',
-    min_value=min_value,
-    max_value=max_value,
-    value=[min_value, max_value])
-
-countries = gdp_df['Country Code'].unique()
-
-if not len(countries):
-    st.warning("Select at least one country")
-
-selected_countries = st.multiselect(
-    'Which countries would you like to view?',
-    countries,
-    ['DEU', 'FRA', 'GBR', 'BRA', 'MEX', 'JPN'])
-
-''
-''
-''
-
-# Filter the data
-filtered_gdp_df = gdp_df[
-    (gdp_df['Country Code'].isin(selected_countries))
-    & (gdp_df['Year'] <= to_year)
-    & (from_year <= gdp_df['Year'])
-]
-
-st.header('GDP over time', divider='gray')
-
-''
-
-st.line_chart(
-    filtered_gdp_df,
-    x='Year',
-    y='GDP',
-    color='Country Code',
-)
-
-''
-''
-
-
-first_year = gdp_df[gdp_df['Year'] == from_year]
-last_year = gdp_df[gdp_df['Year'] == to_year]
-
-st.header(f'GDP in {to_year}', divider='gray')
-
-''
-
-cols = st.columns(4)
-
-for i, country in enumerate(selected_countries):
-    col = cols[i % len(cols)]
-
-    with col:
-        first_gdp = first_year[gdp_df['Country Code'] == country]['GDP'].iat[0] / 1000000000
-        last_gdp = last_year[gdp_df['Country Code'] == country]['GDP'].iat[0] / 1000000000
-
-        if math.isnan(first_gdp):
-            growth = 'n/a'
-            delta_color = 'off'
-        else:
-            growth = f'{last_gdp / first_gdp:,.2f}x'
-            delta_color = 'normal'
-
-        st.metric(
-            label=f'{country} GDP',
-            value=f'{last_gdp:,.0f}B',
-            delta=growth,
-            delta_color=delta_color
-        )
+if prompt := st.chat_input():
+    if not AI71_API_KEY:
+        st.info("Please add your AI71 API key to continue.")
+        st.stop()
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    st.chat_message("user").write(prompt)
+    response = call_ai71(st.session_state.messages,AI71_API_KEY)
+    print(response)
+    msg = response.choices[0].message.content
+    if "intent" in msg:
+        print(msg)
+        isValid, resp = intent_classify(msg)
+        st.session_state.messages.append({"role": "assistant", "content": resp})
+        st.chat_message("assistant").write(resp)
+    else:
+        st.session_state.messages.append({"role": "assistant", "content": msg})
+        st.chat_message("assistant").write(msg)

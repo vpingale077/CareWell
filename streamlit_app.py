@@ -45,11 +45,11 @@ if prompt := st.chat_input():
         st.stop()
     st.session_state.messages.append({"role": "user", "content": prompt})
     st.chat_message("user").write(prompt)
-    response = call_ai71(st.session_state.messages,AI71_API_KEY)
+    response = call_ai71(st.session_state.messages,AI71_API_KEY) 
     print(response)
-    raw_msg = json.loads(response.choices[0].message.content)
-    msg = {k.lower(): v for k, v in raw_msg.items()}
     try:
+        raw_msg = json.loads(response.choices[0].message.content)
+        msg = {k.lower(): v for k, v in raw_msg.items()}
         if "intent" in msg:
             intent = msg.get("intent")
             entities = msg.get("entities", {})
@@ -61,4 +61,6 @@ if prompt := st.chat_input():
             st.session_state.messages.append({"role": "assistant", "content": msg})
             st.chat_message("assistant").write(msg)    
     except (json.JSONDecodeError, IndexError):
+        st.session_state.messages.append({"role": "assistant", "content": msg})
+        st.chat_message("assistant").write(msg)  
         print("Exception")

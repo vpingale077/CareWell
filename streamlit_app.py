@@ -7,14 +7,26 @@ from AI71 import call_ai71
 
 # Constants
 AI71_API_KEY = "your_api_key_here"
+default_resp = "I can only assist with booking, canceling, or checking hospital appointments."
 
 # Functions
 def classify_intent(intent, entities, msg):
     """Classifies an intent and extracts parameters"""
-    if "Booking an appointment" not in intent:
-        return True, f"I can only assist with booking, canceling, or checking appointments."
+
+    allowed_intents = ["Booking an appointment","Canceling an appointment","appointment status","doctor information","hospital information"]
+
+    if intent not in allowed_intents:
+        return True, default_resp
     if "Booking an appointment" in intent:
         return book_appointment(entities, AI71_API_KEY)
+    if "Canceling an appointment" in intent:
+        return True, default_resp
+    if "appointment status" in intent:
+        return True, default_resp
+    if "doctor information" in intent:
+        return True, default_resp
+    if "hospital information" in intent:
+        return True, default_resp
 
 def handle_ai71_response(response):
     try:
@@ -26,9 +38,9 @@ def handle_ai71_response(response):
             is_valid, resp = classify_intent(intent, entities, msg)
             return resp
         else:
-            return msg
+            return default_resp
     except (json.JSONDecodeError, IndexError):
-        return response.choices[0].message.content
+        return default_resp
 
 # Streamlit App
 st.title("CareWell Chatbot")

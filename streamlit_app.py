@@ -42,7 +42,7 @@ with st.sidebar:
 # Chat Interface
 if "messages" not in st.session_state:
     st.session_state["messages"] = [
-        {"role": "system", "content": "Extract only hospital administration intent and entities from the following query in a structured JSON format :Intent: Entities:. Intent must be one of Booking an appointment,Canceling an appointment,appointment status,doctor information,hospital information. All other request must be politly refused. "},
+        {"role": "system", "content": "Extract only hospital administration and All other request must be politly refused. intent and entities from the following query in a structured JSON format :Intent: Entities:. Intent must be one of Booking an appointment,Canceling an appointment,appointment status,doctor information,hospital information."},
         {"role": "assistant", "content": "How can i help you?"}
     ]
 

@@ -1,24 +1,35 @@
-from AI71 import call_ai71
-from appointment_scheduling import book_appointment
 import streamlit as st
 from ai71 import AI71
 import json
 import datetime
+from appointment_scheduling import book_appointment
+from AI71 import call_ai71
 
 # Constants
 AI71_API_KEY = "your_api_key_here"
 
 # Functions
-def intent_classify(intent,entities,msg):
+def classify_intent(intent, entities, msg):
     """Classifies an intent and extracts parameters"""
-    #msg_json = json.loads(msg)
-    #intent = msg_json["intent"]
-    #parameters = msg_json["parameters"]
-    
     if "Booking an appointment" not in intent:
         return True, msg
     if "Booking an appointment" in intent:
-        return book_appointment(entities,AI71_API_KEY)
+        return book_appointment(entities, AI71_API_KEY)
+
+def handle_ai71_response(response):
+    try:
+        raw_msg = json.loads(response.choices[0].message.content)
+        msg = {k.lower(): v for k, v in raw_msg.items()}
+        if "intent" in msg:
+            intent = msg.get("intent")
+            entities = msg.get("entities", {})
+            is_valid, resp = classify_intent(intent, entities, msg)
+            return resp
+        else:
+            return msg
+    except (json.JSONDecodeError, IndexError):
+        return response.choices[0].message.content
+
 # Streamlit App
 st.title("CareWell Chatbot")
 st.caption("Chatbot powered by AI71 for Hospital Administartion")
@@ -45,22 +56,8 @@ if prompt := st.chat_input():
         st.stop()
     st.session_state.messages.append({"role": "user", "content": prompt})
     st.chat_message("user").write(prompt)
-    response = call_ai71(st.session_state.messages,AI71_API_KEY) 
+    response = call_ai71(st.session_state.messages, AI71_API_KEY)
     print(response)
-    try:
-        raw_msg = json.loads(response.choices[0].message.content)
-        msg = {k.lower(): v for k, v in raw_msg.items()}
-        if "intent" in msg:
-            intent = msg.get("intent")
-            entities = msg.get("entities", {})
-            print(msg)
-            isValid, resp = intent_classify(intent,entities,msg)
-            st.session_state.messages.append({"role": "assistant", "content": resp})
-            st.chat_message("assistant").write(resp)
-        else:
-            st.session_state.messages.append({"role": "assistant", "content": msg})
-            st.chat_message("assistant").write(msg)    
-    except (json.JSONDecodeError, IndexError):
-        st.session_state.messages.append({"role": "assistant", "content": response.choices[0].message.content})
-        st.chat_message("assistant").write(response.choices[0].message.content)  
-        print("Exception")
+    response = handle_ai71_response(response)
+    st.session_state.messages.append({"role": "assistant", "content": response})
+    st.chat_message("assistant").write(response)

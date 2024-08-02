@@ -3,11 +3,11 @@ import streamlit as st
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 
-md_username = st.secret["MD_USER"]
-md_password = st.secret["MD_PASS"]
-md_db = st.secret["MD_DB"]
-md_doc_col= st.secret["MD_DOC_COL"]
-md_ap_col = st.secret["MD_AP_COL"]
+md_username = st.secrets["MD_USER"]
+md_password = st.secrets["MD_PASS"]
+md_db = st.secrets["MD_DB"]
+md_doc_col= st.secrets["MD_DOC_COL"]
+md_ap_col = st.secrets["MD_AP_COL"]
 
 uri = "mongodb+srv://{md_username}:{md_password}@cluster0.tgg39md.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 

@@ -5,6 +5,8 @@ from AI71 import call_ai71
 def is_valid_date(date_string):
     """Checks if a date string is valid"""
     try:
+        if isinstance(date_string, datetime.date):
+            return True
         datetime.datetime.strptime(date_string, "%Y-%m-%d")
         return True
     except ValueError:
@@ -27,3 +29,9 @@ def get_date_in_format(date_string,AI71_API_KEY):
 def setChatMsg(response):
     st.session_state.messages.append({"role": "assistant", "content": response})
     st.chat_message("assistant").write(response)
+
+def format_date(date):
+    return date.strftime("%d/%m/%Y")
+
+def format_time(time):
+    return time.strftime("%H:%M")

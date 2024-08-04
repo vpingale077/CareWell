@@ -1,6 +1,11 @@
+import datetime
 import json
-from operations.hospital_operations import book_doctors_appointment
-from util import get_date_in_format, is_valid_date, setChatMsg
+
+import streamlit as st
+from AI71 import call_ai71
+from model import Doctor
+from operations.hospital_operations import book_doctors_appointment, get_available_slots, get_doctor_details, get_doctor_id, get_doctor_names, get_slots_based_on_date
+from util import create_doctor_table, find_doctor_from_list_by_name, get_date_in_format, is_valid_date, setChatMsg, setResponse
 
 
 def book_appointment(raw_parameters: dict, ai71_api_key: str) -> tuple:
@@ -71,3 +76,56 @@ def book_appointment(raw_parameters: dict, ai71_api_key: str) -> tuple:
         print("date missing")
         # Return an error message if the date is invalid
         return False, "Please provide date of appointment"
+
+def check_available_doctors(raw_parameters: dict,ai71_api_key: str) -> tuple:
+    available_doc = get_doctor_details();
+    if raw_parameters is None or not raw_parameters:
+        set_doctors_info_table(create_doctor_table(available_doc))
+    else:
+        available_keys = ["doctor", "date", "time", "location","hospital"]
+        # Convert the raw parameters to lowercase
+        if isinstance(raw_parameters, dict):
+            parameters = {k.lower(): v for k, v in raw_parameters.items()}
+            missing_keys = [key for key in available_keys if key not in parameters]
+        else:
+            missing_keys=available_keys
+        for key in missing_keys:
+            if 'doctor' in key:
+                set_doctors_info_table(create_doctor_table(available_doc))
+            else:
+                doctor_name =parameters.get("doctor").rstrip() 
+                #doc_name_regex = {"$regex": f".*{doctor_name}.*", "$options": "i"} 
+                #print("doc_name_regex",doc_name_regex)
+                #doc_ids = get_doctor_id(doc_name_regex)
+                docs = find_doctor_from_list_by_name(doctor_name)
+                print("docs:::::::::::::::",docs)
+                if docs.len() == 0:
+                    set_doctors_info_table(create_doctor_table(available_doc))
+                elif docs.len() == 1:
+                    if 'date' in missing_keys:
+                        date = datetime.date.today()
+                    else:
+                        date = parameters["date"]
+                    slots = get_available_slots(docs[0].id,date)
+                    set_available_slots_details(repr(docs),slots,date,ai71_api_key)
+                else:
+                    propmt= f"For which doctor you want to book appointment: {', '.join(docs)}"
+                    setChatMsg(propmt)
+
+
+def set_doctors_info_table(available_doc):
+    print("set_doctors_info_table::::::::::")
+    prompt = f"This is list of available doctors."
+    st.session_state.messages.append({"role": "assistant_custom", "content": available_doc.to_string()})
+    with st.chat_message("assistant_custom"):
+        st.write(prompt)
+        st.dataframe(available_doc)
+
+def set_available_slots_details(doctor_name,slots,date,ai71_api_key):
+    prompt = f"This are details of available doctor {doctor_name} details for date {date} and time slots {slots} reply like a hospital admin asisstant in 30 words, where slots details can be clubbed."
+    st.session_state["messages"] = [
+        {"role": "system", "content": prompt},
+    ]
+    response = call_ai71(st.session_state.messages,ai71_api_key)
+    setResponse(response)
+    print("set_available_slots_details",response)

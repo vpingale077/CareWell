@@ -1,5 +1,4 @@
 from ai71 import AI71
-import streamlit as st
 
 AI71_MODEL = "tiiuae/falcon-40b-instruct"
 

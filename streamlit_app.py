@@ -1,8 +1,6 @@
 import streamlit as st
-from ai71 import AI71
 import json
-import datetime
-from appointment_scheduling import book_appointment
+from appointment_scheduling import book_appointment, check_available_doctors
 from AI71 import call_ai71
 from operations.hospital_operations import get_doctor_names, update_doctor_date_time
 from util import setChatMsg
@@ -10,10 +8,15 @@ from util import setChatMsg
 # Constants
 AI71_API_KEY = "your_api_key_here"
 default_resp = "I can only assist with booking, canceling, or checking hospital appointments."
-doctor_names = get_doctor_names()
 
 if 'booking_slots_time' not in st.session_state:
     st.session_state.booking_slots_time = None
+
+if 'booking_error' not in st.session_state:
+    st.session_state.booking_error=None
+
+if 'booking_slots_time_disable' not in st.session_state:
+    st.session_state.booking_slots_time_disable=True
 
 # Functions
 def classify_intent(intent, entities):
@@ -30,7 +33,7 @@ def classify_intent(intent, entities):
     if "appointment status" in intent:
         setChatMsg(default_resp)
     if "doctor information" in intent:
-        setChatMsg(default_resp)
+        check_available_doctors(entities,AI71_API_KEY)
     if "hospital information" in intent:
         setChatMsg(default_resp)
 
@@ -76,12 +79,14 @@ with st.sidebar:
 @st.dialog("How can I help you?")
 def vote(item):
     if "Booking" in item:
+        doctor_names = get_doctor_names()
         st.write(f"Enter details below?")
         name = st.text_input("What's your name?")
-        doctor=st.selectbox("Doctors name?",doctor_names,key="doctor_name_booking")
-        date=st.date_input("Appointment Date?", value=None,on_change=update_doctor_date_time,args=(doctor,date,item))
-        time=st.time_input("Time?",value=st.session_state.booking_slots_time,key="booking_slots_time")
+        doctor=st.selectbox("Doctors name?",options=doctor_names)
+        date=st.date_input("Appointment Date?",key="booking_date", value=None,on_change=update_doctor_date_time,args=(doctor,item))
+        time=st.time_input("Time?",value=st.session_state.booking_slots_time)
         st.session_state.book_appt = {"item":item,"doctor":doctor, "user":name,"date":date, "time":time, "location":"dallas"}
+        st.session_state.booking_error
         st.button("Submit",on_click=book_appointment,args=(st.session_state.book_appt,AI71_API_KEY))
     if "Canceling" in item:
         print("Inside cancellation")
@@ -117,7 +122,6 @@ if prompt := st.chat_input():
     if not AI71_API_KEY:
         st.info("Please add your AI71 API key to continue.")
         st.stop()
-   # if prompt in st.session_state.messages:
     st.session_state.messages.append({"role": "user", "content": prompt})
     st.chat_message("user").write(prompt)
     response = call_ai71(st.session_state.messages, AI71_API_KEY)
